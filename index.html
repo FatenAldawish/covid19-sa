@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>
+        CoronaVirus Statistics
+    </title>
+    <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,600,700,800" rel="stylesheet"/>
+    <link href="assets/css/dashboard.css" rel="stylesheet"/>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+</head>
+
+<body class="">
+<div class="wrapper">
+    <div class="main-panel">
+        <div class="content">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-chart">
+                        <div class="card-header ">
+                            <div class="card-body">
+                                <div id="chartdiv"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card ">
+                        <div class="card-header">
+                            <h4 class="card-title"> COVID-19</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table tablesorter">
+                                    <thead class=" text-primary">
+                                    <tr>
+                                        <th>
+                                            City
+                                        </th>
+                                        <th class="text-center">
+                                            Confirmed
+                                        </th>
+                                        <th class="text-center">
+                                            Deaths
+                                        </th>
+                                        <th class="text-center">
+                                            Recovered
+                                        </th>
+                                        <th class="text-center">
+                                            Total Cases
+                                        </th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody class="bodyTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</div>
+
+<!-- Resources -->
+<script src="https://www.amcharts.com/lib/4/core.js"></script>
+<script src="https://www.amcharts.com/lib/4/charts.js"></script>
+<script src="https://www.amcharts.com/lib/4/maps.js"></script>
+<script src="https://www.amcharts.com/lib/4/geodata/worldLow.js"></script>
+<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+<script src="assets/data/tabledata.js"></script>
+
+
+<script>
+    $(document).ready(function() {
+       am4core.ready(function () {
+        var chartData = saData;
+        var colorSet = new am4core.ColorSet();
+        saData.sort((a, b) => b.total - a.total);
+        for (var i = 0; i < saData.length; i++) {
+            $(".bodyTable").append('<tr><td>' + saData[i].title +
+                '</td><td class="text-center">' + saData[i].confirmed +
+                '</td><td class="text-center">' + saData[i].deaths +
+                '</td><td class="text-center">' + saData[i].recovered +
+                '</td><td class="text-center">' + saData[i].total + '</td></tr>');
+            chartData[i].color = colorSet.next();
+        }
+
+        am4core.useTheme(am4themes_animated);
+
+        // Create map instance
+        var chart = am4core.create("chartdiv", am4maps.MapChart);
+
+        // Set map definition
+        chart.geodata = am4geodata_worldLow;
+
+        // Set projection
+        chart.projection = new am4maps.projections.Miller();
+
+        // Create map polygon series
+        var polygonSeries = chart.series.push(new am4maps.MapPolygonSeries());
+        polygonSeries.include = ["SA"];
+
+        // Make map load polygon (like country names) data from GeoJSON
+        polygonSeries.useGeodata = true;
+
+        // Configure series
+        var polygonTemplate = polygonSeries.mapPolygons.template;
+        polygonTemplate.tooltipText = "{name}";
+        polygonTemplate.polygon.fillOpacity = 0.6;
+        polygonTemplate.fill = "#3b3b3b";
+
+        // Create hover state and set alternative fill color
+        var hs = polygonTemplate.states.create("hover");
+        hs.properties.fill = "#000";
+
+        // Add image series
+        var imageSeries = chart.series.push(new am4maps.MapImageSeries());
+        imageSeries.mapImages.template.propertyFields.longitude = "longitude";
+        imageSeries.mapImages.template.propertyFields.latitude = "latitude";
+        imageSeries.mapImages.template.tooltipText = "[bold]City[/]: [#ffc4b6]{title}[/]\n" +
+            "        [bold]Confirmed[/]: [#ffc4b6]{confirmed}[/]\n" +
+            "           [bold] Deaths[/]: [#ffc4b6]{deaths}[/]\n" +
+            "            [bold]Recovered[/]: [#ffc4b6]{recovered}[/]\n" +
+            "            [bold]Total: [#ffc4b6]{total}[/]";
+
+        var circle = imageSeries.mapImages.template.createChild(am4core.Circle);
+        circle.radius = 3;
+        circle.propertyFields.fill = "color";
+
+        var circle2 = imageSeries.mapImages.template.createChild(am4core.Circle);
+        circle2.radius = 3;
+        circle2.propertyFields.fill = "color";
+
+
+        circle2.events.on("inited", function (event) {
+            animateBullet(event.target);
+        });
+
+
+        function animateBullet(circle) {
+            var animation = circle.animate([{property: "scale", from: 1, to: 5}, {
+                property: "opacity",
+                from: 1,
+                to: 0
+            }], 1000, am4core.ease.circleOut);
+            animation.events.on("animationended", function (event) {
+                animateBullet(event.target.object);
+            })
+        }
+
+        imageSeries.data = chartData;
+    });
+    });
+</script>
+</body>
+</html>
